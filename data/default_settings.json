@@ -1,0 +1,15 @@
+{
+  "gsheet_url": null,
+  "personality_prompt_name": "non-found.txt",
+  "welcome_message": "Welcome to the chat, {username}!",
+  "mentions": ["bot", "helper"],
+  "error_message_non_admin": "Sorry, this command is for chat administrators only.",
+  "anonq_enabled": true,
+  "gsheet_sync_conflict": false,
+  "dialog_mode_enabled": false,
+  "bot_display_name": "Helper Bot",
+  "faq_sheet_name": "FAQs",
+  "settings_sheet_name": "BotSettings",
+  "keep_active_enabled": false,
+  "underground_chat_id_for_anon_questions": null
+} 

@@ -1,0 +1,42 @@
+# .gitignore for Python projects
+# This file is based on https://github.com/github/gitignore/blob/main/Python.gitignore
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.tox/
+.nox/
+
+# Distribution / packaging
+.Python
+build/
+dist/
+venv/
+env/
+.venv/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.bak
+*.swo
+
+# OS generated files
+.DS_Store
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project-specific ignores
+data/*.shelf
+data/*.shelf.*
+data/gspread_key.json
+.env
+app.log 
