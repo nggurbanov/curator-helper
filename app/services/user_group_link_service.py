@@ -15,7 +15,6 @@ class UserGroupLinkService:
     def __init__(self, shelf_file_path: Union[str, Path], shelf_key: str = DEFAULT_SHELF_KEY):
         self.shelf_file_path = Path(shelf_file_path)
         self.shelf_key = shelf_key
-        # No initial _load_links() here; shelve handles persistence directly.
 
     def _get_links_dict(self) -> Dict[int, int]:
         """Opens the shelf and returns the links dictionary, or an empty one if not found."""

@@ -12,7 +12,7 @@ import gspread
 from gspread.exceptions import SpreadsheetNotFound, WorksheetNotFound, APIError
 from typing import List, Dict, Tuple, Optional, Any
 
-from app import config # For GSPREAD_KEY_FILE_PATH
+from app import config
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,6 @@ class GSheetService:
             logger.info("GSpread client initialized successfully.")
         except Exception as e:
             logger.error(f"Failed to initialize GSpread client with {credentials_path}: {e}")
-            # The service will be non-functional, methods should handle self.gc being None.
 
     def _get_spreadsheet(self, gsheet_url: str) -> Optional[gspread.Spreadsheet]:
         """Helper to open a spreadsheet by URL."""
@@ -64,7 +63,7 @@ class GSheetService:
             if create_if_not_exists:
                 logger.info(f"Worksheet '{sheet_name}' not found. Attempting to create it.")
                 try:
-                    worksheet = spreadsheet.add_worksheet(title=sheet_name, rows="100", cols="20") # Default size
+                    worksheet = spreadsheet.add_worksheet(title=sheet_name, rows="100", cols="20")
                     if headers:
                         worksheet.append_row(headers)
                         logger.info(f"Worksheet '{sheet_name}' created successfully with headers: {headers}")
@@ -102,7 +101,7 @@ class GSheetService:
         if not spreadsheet:
             return False, "Spreadsheet not found or could not be accessed. Please check the URL and share settings."
         try:
-            _ = spreadsheet.worksheets() # Try to list worksheets
+            _ = spreadsheet.worksheets()
             return True, None
         except APIError as e:
             logger.error(f"APIError during access check for {gsheet_url}: {e}")
@@ -135,30 +134,23 @@ class GSheetService:
             return None
 
         try:
-            # Get all values, excluding a header row if you expect one (e.g., records[1:])
-            # For simplicity, let's assume first row might be headers or actual data.
-            # If headers are guaranteed, use worksheet.get_all_records()
             all_values = worksheet.get_all_values()
             if not all_values:
                 logger.info(f"FAQ sheet '{faq_sheet_name}' in {gsheet_url} is empty.")
                 return []
 
             faqs = []
-            # Skip header row if present by starting from all_values[1]
-            # Here, we assume first row could be data or header.
-            # If you have a strict header, adjust accordingly.
             start_row = 0
             if all_values and len(all_values[0]) >= 2 and \
-               (all_values[0][0].lower().strip() == "вопрос" or all_values[0][0].lower().strip() == "question"): # Basic header check
+               (all_values[0][0].lower().strip() == "вопрос" or all_values[0][0].lower().strip() == "question"):
                 start_row = 1
 
             for row in all_values[start_row:]:
                 if len(row) >= 2:
                     question = row[0].strip()
                     answer = row[1].strip()
-                    if question and answer: # Ensure both are non-empty
+                    if question and answer:
                         faqs.append((question, answer))
-                # else: logger.warning(f"Skipping malformed row in FAQ sheet: {row}")
             logger.info(f"Successfully read {len(faqs)} FAQs from '{faq_sheet_name}'.")
             return faqs
         except APIError as e:
@@ -186,8 +178,6 @@ class GSheetService:
 
         worksheet = self._get_worksheet(spreadsheet, settings_sheet_name)
         if not worksheet:
-            # If the settings sheet itself is not found, it's an error for reading.
-            # Creation is handled by write_settings_sheet or during setfaqsheet.
             logger.warning(f"Settings sheet '{settings_sheet_name}' not found in {gsheet_url} for reading.")
             return None
 
@@ -198,7 +188,6 @@ class GSheetService:
                 logger.info(f"Settings sheet '{settings_sheet_name}' in {gsheet_url} is empty.")
                 return {}
 
-            # Skip header row if present
             start_row = 0
             if all_values and len(all_values[0]) >= 2 and \
                (all_values[0][0].lower().strip() == "setting" or all_values[0][0].lower().strip() == "key"):
@@ -208,9 +197,7 @@ class GSheetService:
                 if len(row) >= 2:
                     key = row[0].strip()
                     value_str = row[1].strip()
-                    if key: # Ensure key is non-empty
-                        # Attempt to convert value to appropriate type (bool, int, float)
-                        # This is a simple type conversion. More robust parsing might be needed.
+                    if key:
                         if value_str.lower() == 'true':
                             value = True
                         elif value_str.lower() == 'false':
@@ -221,9 +208,9 @@ class GSheetService:
                             try:
                                 value = float(value_str)
                             except ValueError:
-                                value = value_str # Fallback to string if float conversion fails
+                                value = value_str
                         else:
-                            value = value_str # Default to string
+                            value = value_str
                         settings_dict[key] = value
             logger.info(f"Successfully read {len(settings_dict)} settings from '{settings_sheet_name}'.")
             return settings_dict
@@ -252,7 +239,6 @@ class GSheetService:
         if not spreadsheet:
             return False
 
-        # Try to get the worksheet, or create it with headers if it doesn't exist
         headers = ["Setting Key", "Setting Value"]
         worksheet = self._get_worksheet(spreadsheet, settings_sheet_name, create_if_not_exists=True, headers=headers)
         if not worksheet:
@@ -260,19 +246,14 @@ class GSheetService:
             return False
 
         try:
-            # Clear existing content beyond the header row
             worksheet.clear()
 
             data_to_write = []
-            # Write settings in the order of default_settings_schema keys for consistency
             for key in default_settings_schema.keys():
-                value = settings_data.get(key, default_settings_schema.get(key)) # Use provided value or default
-                # Convert value to string for GSheet, unless it's None
+                value = settings_data.get(key, default_settings_schema.get(key))
                 value_str = str(value) if value is not None else ""
                 data_to_write.append([key, value_str])
             
-            # Add any extra settings from settings_data not in default_settings_schema
-            # (though ideally, settings_data should align with the schema)
             for key, value in settings_data.items():
                 if key not in default_settings_schema:
                     value_str = str(value) if value is not None else ""
@@ -291,15 +272,7 @@ class GSheetService:
             logger.error(f"Unexpected error writing settings to '{settings_sheet_name}': {e}")
             return False
 
-# Example of how this service might be initialized and used (e.g., in main.py or passed to handlers)
-# gsheet_service_instance = GSheetService()
-
 if __name__ == '__main__':
-    # This block is for testing the GSheetService independently.
-    # Requires a valid data/gspread_key.json and a test Google Sheet.
-    # Set up a .env file with GSPREAD_KEY_FILE_PATH pointing to your key.
-    # And ensure app.config can load it.
-
     print("GSheetService Test Block")
     print("------------------------")
     print(f"Attempting to use GSpread key from: {config.GSPREAD_KEY_FILE_PATH}")
@@ -313,8 +286,7 @@ if __name__ == '__main__':
         print("GSpread client initialization failed. Exiting tests.")
         exit()
 
-    # --- IMPORTANT: Replace with your actual test Google Sheet URL ---
-    TEST_GSHEET_URL = "YOUR_TEST_GOOGLE_SHEET_URL_HERE" # Make sure this sheet is shared with your service account email
+    TEST_GSHEET_URL = "YOUR_TEST_GOOGLE_SHEET_URL_HERE"
     if TEST_GSHEET_URL == "YOUR_TEST_GOOGLE_SHEET_URL_HERE":
         print("\nPlease set TEST_GSHEET_URL in the __main__ block of gsheet_service.py to run tests.")
         exit()
@@ -322,7 +294,6 @@ if __name__ == '__main__':
     TEST_FAQ_SHEET_NAME = "TestFAQs"
     TEST_SETTINGS_SHEET_NAME = "TestBotSettings"
     
-    # 0. Test access
     print(f"\n0. Testing access to: {TEST_GSHEET_URL}")
     access_ok, access_msg = service.check_spreadsheet_access(TEST_GSHEET_URL)
     if access_ok:
@@ -333,13 +304,12 @@ if __name__ == '__main__':
         exit()
 
 
-    # 1. Test writing settings (will create the sheet if it doesn't exist)
     print(f"\n1. Testing write_settings_sheet to '{TEST_SETTINGS_SHEET_NAME}'...")
     from app.services.config_manager import get_default_settings as get_bot_default_settings
-    current_defaults = get_bot_default_settings() # Get the schema from config_manager
+    current_defaults = get_bot_default_settings()
     
     test_settings_data = current_defaults.copy()
-    test_settings_data["gsheet_url"] = TEST_GSHEET_URL # Example override
+    test_settings_data["gsheet_url"] = TEST_GSHEET_URL
     test_settings_data["personality_prompt_name"] = "test_override_prompt.txt"
     test_settings_data["anonq_enabled"] = False
     test_settings_data["custom_test_setting"] = "This is a test value from gsheet_service"
